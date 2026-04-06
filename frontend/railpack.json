@@ -3,7 +3,7 @@
   "steps": {
     "install": {
       "commands": [
-        "if [ -f frontend/package.json ]; then cd frontend; fi; npm install"
+        "npm install"
       ]
     }
   }
