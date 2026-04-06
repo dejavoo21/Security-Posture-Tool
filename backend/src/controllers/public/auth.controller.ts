@@ -1,10 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-import "dotenv/config";
-const prisma = new PrismaClient();
+import { prisma } from '../../lib/prisma.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 export const register = async (req: Request, res: Response): Promise<any> => {

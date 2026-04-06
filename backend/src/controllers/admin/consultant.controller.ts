@@ -1,8 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import "dotenv/config";
-
-const prisma = new PrismaClient();
+import { prisma } from '../../lib/prisma.js';
 
 export const getConsultantQueue = async (req: any, res: Response) => {
     try {
