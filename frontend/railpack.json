@@ -3,12 +3,12 @@
   "steps": {
     "install": {
       "commands": [
-        "if [ -f package.json ]; then npm install --include=dev; elif [ -f frontend/package.json ]; then cd frontend && npm install --include=dev; fi"
+        "true"
       ]
     },
     "build": {
       "commands": [
-        "if [ -f package.json ]; then npm run build; elif [ -f frontend/package.json ]; then cd frontend && npm run build && rm -rf ../dist && cp -r dist ../dist; fi"
+        "if [ -f package.json ]; then npm install --include=dev && npm run build; elif [ -f frontend/package.json ]; then cd frontend && npm install --include=dev && npm run build && rm -rf ../dist && cp -r dist ../dist; fi"
       ]
     }
   }
