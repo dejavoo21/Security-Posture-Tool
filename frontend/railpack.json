@@ -3,7 +3,7 @@
   "steps": {
     "install": {
       "commands": [
-        "if [ -f package.json ]; then npm install; elif [ -f frontend/package.json ]; then cd frontend && npm install; fi"
+        "if [ -f package.json ]; then npm install --include=dev; elif [ -f frontend/package.json ]; then cd frontend && npm install --include=dev; fi"
       ]
     },
     "build": {
