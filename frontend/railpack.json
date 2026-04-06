@@ -8,7 +8,7 @@
     },
     "build": {
       "commands": [
-        "if [ -f package.json ]; then npm ci --include=dev && npm run build; elif [ -f frontend/package.json ]; then cd frontend && npm ci --include=dev && npm run build && rm -rf ../dist && cp -r dist ../dist; fi"
+        "if [ -f package.json ]; then rm -rf node_modules && npm ci --include=dev && npm run build; elif [ -f frontend/package.json ]; then cd frontend && rm -rf node_modules && npm ci --include=dev && npm run build && rm -rf ../dist && cp -r dist ../dist; fi"
       ]
     }
   }
