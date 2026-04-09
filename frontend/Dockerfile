@@ -1,9 +1,9 @@
-FROM node:20-alpine AS build
+FROM node:20-bookworm-slim AS build
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --include=dev --no-audit --no-fund
+RUN npm install --include=dev --no-audit --no-fund
 
 COPY . ./
 RUN npm run build
