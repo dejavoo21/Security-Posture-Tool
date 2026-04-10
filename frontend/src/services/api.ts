@@ -1,4 +1,8 @@
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:4000/api';
+const API_BASE =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ||
+  (import.meta.env.PROD
+    ? "https://security-posture-tool-production.up.railway.app/api"
+    : "http://localhost:4000/api");
 const PUBLIC_BASE = `${API_BASE}/public`;
 const ADMIN_BASE = `${API_BASE}/admin`;
 const WORKSPACE_BASE = `${API_BASE}/workspace`;
