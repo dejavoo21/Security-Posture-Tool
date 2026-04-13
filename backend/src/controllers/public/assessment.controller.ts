@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { mockQuestions, mockAssessments } from '../../data/mockQuestions.js';
 import { Assessment, AssessmentResponse, CompanyData } from '../../types/index.js';
 import { calculateScore, computeMaturityLevel, computeRiskLevel, generateRecommendations } from '../../services/scoring.service.js';
+import { convertPublicSessionToWorkspaceAssessment } from '../../services/publicConversion.service.js';
 
 export const startAssessment = (req: Request, res: Response) => {
   try {
@@ -92,8 +93,38 @@ export const getAssessmentResults = (req: Request, res: Response) => {
       frameworkScores: assessment.frameworkScores,
       recommendations: assessment.recommendations.slice(0, 5),
       date: assessment.date,
+      conversion: {
+        isConverted: Boolean(assessment.convertedAt),
+        convertedAt: assessment.convertedAt,
+        convertedAssessmentId: assessment.convertedAssessmentId,
+      },
     });
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving assessment results' });
+  }
+};
+
+export const claimAssessment = async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const user = (req as any).user;
+
+    if (!user?.id || !user?.organizationId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const conversion = await convertPublicSessionToWorkspaceAssessment(id, user.organizationId, user.id);
+
+    if (conversion.status === 'not_found') {
+      return res.status(404).json(conversion);
+    }
+
+    if (conversion.status === 'not_completed') {
+      return res.status(409).json(conversion);
+    }
+
+    res.status(200).json(conversion);
+  } catch (error) {
+    res.status(500).json({ message: 'Error claiming assessment' });
   }
 };

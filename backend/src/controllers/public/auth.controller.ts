@@ -2,11 +2,19 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../lib/prisma.js';
+import {
+    convertPublicSessionToWorkspaceAssessment,
+    getPublicSessionOrganizationContext
+} from '../../services/publicConversion.service.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 export const register = async (req: Request, res: Response): Promise<any> => {
     try {
-        const { fullName, email, password, organizationName, publicSessionId } = req.body;
+        const { fullName, email, password, organizationName, organizationIndustry, organizationSize, publicSessionId } = req.body;
+
+        if (!fullName || !email || !password) {
+            return res.status(400).json({ error: 'Full name, email, and password are required' });
+        }
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
@@ -14,6 +22,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+        const sessionContext = await getPublicSessionOrganizationContext(publicSessionId);
 
         const user = await prisma.user.create({
             data: {
@@ -23,9 +32,10 @@ export const register = async (req: Request, res: Response): Promise<any> => {
                 role: 'ORG_ADMIN',
                 organization: {
                     create: {
-                        name: organizationName,
-                        industry: 'General',
-                        size: 'SME',
+                        name: organizationName || sessionContext.organizationName || 'My Organization',
+                        industry: organizationIndustry || sessionContext.industry || 'General',
+                        size: organizationSize || sessionContext.size || 'SME',
+                        selectedFrameworks: [],
                     }
                 }
             },
@@ -34,9 +44,9 @@ export const register = async (req: Request, res: Response): Promise<any> => {
             }
         });
 
-        if (publicSessionId && user.organizationId) {
-            await convertPublicSession(publicSessionId, user.organizationId, user.id);
-        }
+        const conversion = publicSessionId && user.organizationId
+            ? await convertPublicSessionToWorkspaceAssessment(publicSessionId, user.organizationId, user.id)
+            : null;
 
         const token = jwt.sign(
             { id: user.id, organizationId: user.organizationId, role: user.role },
@@ -47,17 +57,21 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         res.status(201).json({
             user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
             organization: user.organization,
-            token
+            token,
+            conversion
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
 export const login = async (req: Request, res: Response): Promise<any> => {
     try {
         const { email, password, publicSessionId } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
 
         const user = await prisma.user.findUnique({
             where: { email },
@@ -68,9 +82,9 @@ export const login = async (req: Request, res: Response): Promise<any> => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        if (publicSessionId && user.organizationId) {
-            await convertPublicSession(publicSessionId, user.organizationId, user.id);
-        }
+        const conversion = publicSessionId && user.organizationId
+            ? await convertPublicSessionToWorkspaceAssessment(publicSessionId, user.organizationId, user.id)
+            : null;
 
         const token = jwt.sign(
             { id: user.id, organizationId: user.organizationId, role: user.role },
@@ -81,14 +95,14 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         res.status(200).json({
             user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
             organization: user.organization,
-            token
+            token,
+            conversion
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
 export const getMe = async (req: any, res: Response): Promise<any> => {
     try {
         const user = await prisma.user.findUnique({
@@ -114,30 +128,3 @@ export const getMe = async (req: any, res: Response): Promise<any> => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
-async function convertPublicSession(sessionId: string, orgId: string, userId: string) {
-    const session = await prisma.publicAssessmentSession.findUnique({ where: { id: sessionId } });
-    if (!session || session.status !== 'COMPLETED' || session.convertedAt) {
-        return;
-    }
-
-    const assessment = await prisma.assessment.create({
-        data: {
-            organizationId: orgId,
-            overallScore: session.overallScore || 0,
-            maturityLevel: session.maturityLevel || 'Unknown',
-            riskLevel: session.riskLevel || 'Unknown',
-            date: new Date(),
-        }
-    });
-
-    await prisma.publicAssessmentSession.update({
-        where: { id: sessionId },
-        data: {
-            convertedAt: new Date(),
-            convertedAssessmentId: assessment.id,
-            convertedOrganizationId: orgId,
-            convertedUserId: userId,
-        }
-    });
-}

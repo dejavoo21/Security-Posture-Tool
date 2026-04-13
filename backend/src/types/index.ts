@@ -53,8 +53,8 @@ export interface CompanyData {
     name: string;
     industry: string;
     size: string;
-    contactName: string;
-    email: string;
+    contactName?: string;
+    email?: string;
 }
 
 export interface AssessmentResponse {
@@ -89,4 +89,8 @@ export interface Assessment {
     gaps?: Gap[];
     recommendations: string[];
     date: string;
+    convertedAt?: string;
+    convertedAssessmentId?: string;
+    convertedOrganizationId?: string;
+    convertedUserId?: string;
 }

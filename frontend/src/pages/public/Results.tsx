@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -19,6 +19,7 @@ import { apiService } from "../../services/api";
 
 export function Results() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const [result, setResult] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,11 +71,20 @@ export function Results() {
   return (
     <Layout>
       <section className="page-container">
+        {searchParams.get("saved") === "1" && (
+          <div className="surface-card" role="status" aria-live="polite" style={{ marginBottom: 24, borderColor: "rgba(52, 211, 153, 0.45)" }}>
+            <p className="eyebrow" style={{ color: "#34d399" }}>Saved to workspace</p>
+            <p className="muted-text" style={{ margin: 0 }}>
+              This assessment has been connected to your account. You can continue from here without retaking the public questionnaire.
+            </p>
+          </div>
+        )}
+
         <div className="score-card" style={{ marginBottom: 48 }}>
           <div className="score-card__row">
             <div>
               <div style={{ background: "rgba(251, 191, 36, 0.1)", border: "1px solid rgba(251, 191, 36, 0.2)", padding: "8px 16px", borderRadius: 8, marginBottom: 16, color: "#fbbf24", fontSize: "0.85rem", fontWeight: 600 }}>
-                INDICATIVE RESULTS ONLY - CREATE AN ACCOUNT FOR FULL COMPLIANCE WORKFLOWS
+                HIGH-LEVEL READINESS ESTIMATE - NOT A FORMAL CERTIFICATION OR AUDIT
               </div>
               <p className="eyebrow" style={{ color: "#fff" }}>Executive Summary</p>
               <h2 style={{ fontSize: "2rem", margin: "0 0 8px 0", color: "#fff" }}>
@@ -104,9 +114,13 @@ export function Results() {
           </div>
 
           <div style={{ marginTop: 32, display: "flex", gap: 16, flexWrap: "wrap" }}>
-            <Link to="/start" className="button-primary">Create Account to Unlock Details</Link>
+            <Link to={`/results/${id}/unlock`} className="button-primary">Save results and unlock full report</Link>
+            <Link to={`/results/${id}/unlock?mode=login`} className="button-secondary">Sign in to save this assessment</Link>
             <Link to="/leaderboard" className="button-secondary">Compare Benchmarks</Link>
           </div>
+          <p style={{ margin: "18px 0 0", color: "rgba(255,255,255,0.72)" }}>
+            Create an account to save this result, unlock detailed reporting in your workspace, and track improvement over time.
+          </p>
         </div>
 
         <div className="results-grid" style={{ marginBottom: 48 }}>

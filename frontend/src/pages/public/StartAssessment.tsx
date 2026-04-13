@@ -8,9 +8,7 @@ export function StartAssessment() {
   const [formData, setFormData] = useState({
     name: '',
     industry: '',
-    size: '',
-    contactName: '',
-    email: ''
+    size: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +19,7 @@ export function StartAssessment() {
     setError(null);
 
     // Basic Validation
-    if (!formData.name || !formData.industry || !formData.email) {
+    if (!formData.name || !formData.industry) {
       setError("Please fill in all required fields.");
       setIsLoading(false);
       return;
@@ -52,7 +50,7 @@ export function StartAssessment() {
           <p className="eyebrow">Onboarding</p>
           <h2 className="page-title">Start your Assessment</h2>
           <p className="muted-text" style={{ marginBottom: 32 }}>
-            Provide your company profile below to tailor the baseline recommendations.
+            No sign-up required. Share the basics, get a quick view of your security posture, then create an account later if you want to save results and unlock deeper reporting.
           </p>
 
           {error && (
@@ -94,25 +92,6 @@ export function StartAssessment() {
                 <option value="201-1000">201-1000 employees</option>
                 <option value="1000+">1000+ employees</option>
               </select>
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="contactName">Contact Name</label>
-              <input
-                id="contactName" name="contactName" type="text"
-                placeholder="John Doe"
-                value={formData.contactName} onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="email">Email Address *</label>
-              <input
-                id="email" name="email" type="email"
-                placeholder="john@example.com"
-                value={formData.email} onChange={handleChange}
-                required
-              />
             </div>
 
             <div className="form-span-2" style={{ marginTop: 16 }}>

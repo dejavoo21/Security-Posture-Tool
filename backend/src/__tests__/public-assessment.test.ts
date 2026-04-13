@@ -18,9 +18,7 @@ describe("public assessment API", () => {
       .send({
         name: "Test Corp",
         industry: "Technology",
-        size: "1-50",
-        contactName: "Test User",
-        email: "test@example.com"
+        size: "1-50"
       });
 
     expect(response.status).toBe(201);
@@ -45,9 +43,7 @@ describe("public assessment API", () => {
       .send({
         name: "Summary Corp",
         industry: "Finance",
-        size: "51-200",
-        contactName: "Summary User",
-        email: "summary@example.com"
+        size: "51-200"
       });
 
     const questionsResponse = await request(app).get("/api/public/assessments/questions");
@@ -69,6 +65,7 @@ describe("public assessment API", () => {
     expect(resultsResponse.body).toHaveProperty("maturityLevel");
     expect(resultsResponse.body).toHaveProperty("riskLevel");
     expect(resultsResponse.body).toHaveProperty("recommendations");
+    expect(resultsResponse.body.conversion).toEqual(expect.objectContaining({ isConverted: false }));
     expect(resultsResponse.body).not.toHaveProperty("responses");
     expect(resultsResponse.body).not.toHaveProperty("controlReadiness");
     expect(resultsResponse.body).not.toHaveProperty("gaps");

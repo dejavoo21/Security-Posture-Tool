@@ -3,6 +3,7 @@ import { LandingPage } from "./pages/public/Landing";
 import { StartAssessment } from "./pages/public/StartAssessment";
 import { Questionnaire } from "./pages/public/Questionnaire";
 import { Results } from "./pages/public/Results";
+import { UnlockResults } from "./pages/public/UnlockResults";
 import { Leaderboard } from "./pages/public/Leaderboard";
 import { Admin } from "./pages/admin/Admin";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -13,6 +14,7 @@ function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/start" element={<StartAssessment />} />
       <Route path="/assessment/:id" element={<Questionnaire />} />
+      <Route path="/results/:id/unlock" element={<UnlockResults />} />
       <Route path="/results/:id" element={<Results />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
       <Route

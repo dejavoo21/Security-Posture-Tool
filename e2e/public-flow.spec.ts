@@ -14,8 +14,6 @@ test.describe("public assessment flow", () => {
     await page.getByLabel(/company name/i).fill("E2E Test Corp");
     await page.getByLabel(/industry/i).selectOption("Technology");
     await page.getByLabel(/company size/i).selectOption("1-50");
-    await page.getByLabel(/contact name/i).fill("QA Tester");
-    await page.getByLabel(/email address/i).fill("qa@example.com");
     await page.getByRole("button", { name: /begin questionnaire/i }).click();
 
     await expect(page).toHaveURL(/\/assessment\//);
@@ -38,6 +36,10 @@ test.describe("public assessment flow", () => {
     await expect(page.getByText("Maturity Level")).toBeVisible();
     await expect(page.getByText("Risk Level")).toBeVisible();
     await expect(page.getByText(/strategic next actions/i)).toBeVisible();
+    await page.getByRole("link", { name: /save results and unlock full report/i }).click();
+    await expect(page).toHaveURL(/\/results\/.+\/unlock/);
+    await expect(page.getByRole("heading", { name: /save results and unlock full report/i })).toBeVisible();
+    await expect(page.getByLabel(/organization/i)).toHaveValue("E2E Test Corp");
 
     await expect(page.getByText(/detailed control readiness/i)).toHaveCount(0);
     await expect(page.getByText(/required evidence/i)).toHaveCount(0);

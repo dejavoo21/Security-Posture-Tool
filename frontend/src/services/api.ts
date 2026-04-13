@@ -42,6 +42,32 @@ export const apiService = {
     return res.json();
   },
 
+  register: async (payload: any) => {
+    const res = await fetch(`${PUBLIC_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  },
+
+  login: async (payload: any) => {
+    const res = await fetch(`${PUBLIC_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  },
+
+  claimAssessment: async (id: string) => {
+    const res = await fetch(`${PUBLIC_BASE}/assessments/${id}/claim`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    return res.json();
+  },
+
   downloadPdfUrl: (id: string) => {
     return `${WORKSPACE_BASE}/reports/${id}/pdf`;
   },

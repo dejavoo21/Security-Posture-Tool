@@ -65,10 +65,13 @@ describe("public results page", () => {
     expect(screen.getByText("Moderate")).toBeInTheDocument();
     expect(screen.getByText("Prioritize MFA rollout")).toBeInTheDocument();
     expect(screen.getByText("Global Framework Alignment")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /save results and unlock full report/i })).toHaveAttribute("href", "/results/assessment-1/unlock");
+    expect(screen.getByRole("link", { name: /sign in to save this assessment/i })).toHaveAttribute("href", "/results/assessment-1/unlock?mode=login");
 
     expect(screen.queryByText(/detailed control readiness/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/required evidence/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/private control/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/private artifact/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/remediation tracker/i)).not.toBeInTheDocument();
   });
 });
