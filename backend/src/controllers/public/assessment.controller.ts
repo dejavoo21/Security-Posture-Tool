@@ -108,12 +108,18 @@ export const claimAssessment = async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
     const user = (req as any).user;
+    console.info('[assessment.claim] attempt', { publicSessionId: id, userId: user?.id });
 
     if (!user?.id || !user?.organizationId) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     const conversion = await convertPublicSessionToWorkspaceAssessment(id, user.organizationId, user.id);
+    console.info('[assessment.claim] conversion result', {
+      publicSessionId: id,
+      status: conversion.status,
+      assessmentId: conversion.assessmentId
+    });
 
     if (conversion.status === 'not_found') {
       return res.status(404).json(conversion);
@@ -125,6 +131,9 @@ export const claimAssessment = async (req: Request, res: Response) => {
 
     res.status(200).json(conversion);
   } catch (error) {
+    console.error('[assessment.claim] unexpected failure', {
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
     res.status(500).json({ message: 'Error claiming assessment' });
   }
 };

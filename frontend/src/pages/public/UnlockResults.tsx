@@ -15,6 +15,7 @@ export function UnlockResults() {
   const [isLoadingResult, setIsLoadingResult] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [success, setSuccess] = useState<any>(null);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -51,6 +52,7 @@ export function UnlockResults() {
     event.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setErrorCode(null);
 
     try {
       const payload = {
@@ -72,11 +74,13 @@ export function UnlockResults() {
 
       if (response.error) {
         setError(response.error);
+        setErrorCode(response.code || response.conversion?.status || null);
         return;
       }
 
       if (!response.token || !response.user) {
         setError("Account access succeeded, but the assessment could not be saved. Please try again.");
+        setErrorCode("SAVE_FAILED");
         return;
       }
 
@@ -85,6 +89,7 @@ export function UnlockResults() {
       setSuccess(response);
     } catch {
       setError("A network error occurred while saving your assessment.");
+      setErrorCode("NETWORK_ERROR");
     } finally {
       setIsSubmitting(false);
     }
@@ -170,8 +175,22 @@ export function UnlockResults() {
           </div>
 
           {error && (
-            <div className="error-state" style={{ marginBottom: 24, padding: 16 }}>
+            <div className="error-state" role="alert" aria-live="assertive" style={{ marginBottom: 24, padding: 16 }}>
               <p className="error-text" style={{ margin: 0 }}>{error}</p>
+              {errorCode === "EMAIL_EXISTS" && (
+                <button
+                  type="button"
+                  className="button-secondary"
+                  style={{ marginTop: 12 }}
+                  onClick={() => {
+                    setMode("login");
+                    setError("This email already has an account. Sign in to save this assessment.");
+                    setErrorCode(null);
+                  }}
+                >
+                  Sign in instead
+                </button>
+              )}
             </div>
           )}
 
