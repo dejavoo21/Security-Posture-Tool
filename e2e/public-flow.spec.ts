@@ -30,8 +30,8 @@ test.describe("public assessment flow", () => {
     await expect(page).toHaveURL(/\/results\//);
     await expect(page.locator(".score-card__score")).toBeVisible();
     await expect(page.getByText(/E2E Test Corp/i)).toBeVisible();
-    await expect(page.getByText(/maturity/i)).toBeVisible();
-    await expect(page.getByText(/risk/i)).toBeVisible();
+    await expect(page.getByText("Maturity Level")).toBeVisible();
+    await expect(page.getByText("Risk Level")).toBeVisible();
     await expect(page.getByText(/top recommendations/i)).toBeVisible();
 
     await expect(page.getByText(/detailed control readiness/i)).toHaveCount(0);
