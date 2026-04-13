@@ -7,6 +7,11 @@ const PUBLIC_BASE = `${API_BASE}/public`;
 const ADMIN_BASE = `${API_BASE}/admin`;
 const WORKSPACE_BASE = `${API_BASE}/workspace`;
 
+const getAuthHeaders = (): Record<string, string> => {
+  const token = window.localStorage.getItem("authToken");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export const apiService = {
   // Assessment Flow
   startAssessment: async (companyData: any) => {
@@ -49,14 +54,16 @@ export const apiService = {
 
   // Admin
   getAdminQuestions: async () => {
-    const res = await fetch(`${ADMIN_BASE}/questions`);
+    const res = await fetch(`${ADMIN_BASE}/questions`, {
+      headers: getAuthHeaders()
+    });
     return res.json();
   },
 
   createQuestion: async (question: any) => {
     const res = await fetch(`${ADMIN_BASE}/questions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(question)
     });
     return res.json();
@@ -65,7 +72,7 @@ export const apiService = {
   updateQuestion: async (id: string, question: any) => {
     const res = await fetch(`${ADMIN_BASE}/questions/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(question)
     });
     return res.json();
@@ -73,7 +80,8 @@ export const apiService = {
 
   deleteQuestion: async (id: string) => {
     const res = await fetch(`${ADMIN_BASE}/questions/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders()
     });
     return res.json();
   }

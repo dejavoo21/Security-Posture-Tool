@@ -1,74 +1,70 @@
-import { test, expect } from '@playwright/test';
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test } from "@playwright/test";
 
-test.describe('Public Assessment Flow', () => {
-    test('should complete the full flow from landing to results', async ({ page }) => {
-        // 1. Visit Landing
-        await page.goto('/');
-        await expect(page.locator('h2.hero-title')).toContainText('Measure cyber maturity');
+test.describe("public assessment flow", () => {
+  test("completes the public flow and shows lightweight results only", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("h1")).toContainText(/cyber maturity/i);
 
-        // 2. Start Assessment
-        await page.click('button:has-text("Start assessment")');
-        await expect(page).toHaveURL(/\/start/);
+    await page.getByRole("button", { name: /start assessment/i }).click();
+    await expect(page).toHaveURL(/\/start/);
 
-        // 3. Fill Onboarding Form
-        await page.fill('input[name="name"]', 'E2E Test Corp');
-        await page.selectOption('select[name="industry"]', 'Technology');
-        await page.fill('input[name="email"]', 'e2e@example.com');
-        await page.click('button:has-text("Begin Questionnaire")');
+    await page.getByLabel(/company name/i).fill("E2E Test Corp");
+    await page.getByLabel(/industry/i).selectOption("Technology");
+    await page.getByLabel(/company size/i).selectOption("1-50");
+    await page.getByLabel(/contact name/i).fill("QA Tester");
+    await page.getByLabel(/email address/i).fill("qa@example.com");
+    await page.getByRole("button", { name: /begin questionnaire/i }).click();
 
-        // 4. Complete Questionnaire
-        await expect(page).toHaveURL(/\/assessment\//);
+    await expect(page).toHaveURL(/\/assessment\//);
 
-        // Loop through questions (assume 12 based on highlights)
-        // For simplicity in this test, we'll answer a few and wait for progress
-        // Ideally, we'd loop until the 'Finish' button appears
-        let isFinished = false;
-        while (!isFinished) {
-            const questionText = await page.locator('h2').textContent();
-            console.log(`Answering: ${questionText}`);
+    while (await page.getByRole("button", { name: /next question/i }).isVisible().catch(() => false)) {
+      await page.locator(".option-button").first().click();
+      await page.getByRole("button", { name: /next question/i }).click();
+    }
 
-            // Click the first option
-            await page.locator('.option-button').first().click();
+    await page.locator(".option-button").first().click();
+    await page.getByRole("button", { name: /finish assessment/i }).click();
 
-            const nextButton = page.locator('button:has-text("Next Question"), button:has-text("Finish Assessment")');
-            const buttonText = await nextButton.textContent();
+    await expect(page).toHaveURL(/\/results\//);
+    await expect(page.locator(".score-card__score")).toBeVisible();
+    await expect(page.getByText(/E2E Test Corp/i)).toBeVisible();
+    await expect(page.getByText(/maturity/i)).toBeVisible();
+    await expect(page.getByText(/risk/i)).toBeVisible();
+    await expect(page.getByText(/top recommendations/i)).toBeVisible();
 
-            if (buttonText?.includes('Finish')) {
-                isFinished = true;
-            }
+    await expect(page.getByText(/detailed control readiness/i)).toHaveCount(0);
+    await expect(page.getByText(/required evidence/i)).toHaveCount(0);
+    await expect(page.getByText(/evidence artifact/i)).toHaveCount(0);
+    await expect(page.getByText(/remediation tracker/i)).toHaveCount(0);
+  });
 
-            await nextButton.click();
-        }
+  test("keeps the public pages usable on mobile", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("navigation", { name: /main navigation/i })).toBeVisible();
 
-        // 5. Verify Results Summary
-        await expect(page).toHaveURL(/\/results\//);
-        await expect(page.locator('.score-card__score')).toBeVisible();
-        await expect(page.locator('h2')).toContainText('E2E Test Corp');
-
-        // 6. Security Check: Restricted content in public mode
-        await expect(page.locator('text=Detailed Gap Analysis Restricted')).toBeVisible();
-        await expect(page.locator('text=🔒')).toBeVisible();
+    const hasHorizontalOverflow = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > window.innerWidth + 1;
     });
 
-    test('mobile responsiveness', async ({ page, isMobile }) => {
-        await page.goto('/');
-        if (isMobile) {
-            // Check for mobile-specific navigation elements if they exist
-            // Or verify that the layout stack correctly
-            const heroCard = page.locator('.hero-card');
-            const box = await heroCard.boundingBox();
-            expect(box?.width).toBeLessThan(600);
-        }
-    });
+    expect(hasHorizontalOverflow).toBe(false);
+  });
 
-    test('accessibility audit', async ({ page }) => {
-        await page.goto('/');
-        // In a real scenario, we'd use axe-playwright here
-        // await injectAxe(page);
-        // await checkA11y(page);
+  test("blocks anonymous users from the admin page", async ({ page }) => {
+    await page.goto("/admin");
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("heading", { name: /admin/i })).toHaveCount(0);
+  });
 
-        // Manual checks for accessibility markers
-        await expect(page.locator('nav[aria-label="Main navigation"]')).toBeVisible();
-        await expect(page.locator('h1')).toBeVisible();
-    });
+  test("@a11y landing page passes automated accessibility smoke checks", async ({ page }) => {
+    await page.goto("/");
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test("@a11y start assessment page passes automated accessibility smoke checks", async ({ page }) => {
+    await page.goto("/start");
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
+  });
 });

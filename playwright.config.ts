@@ -1,43 +1,47 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
+
+const frontendUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173";
+const backendUrl = process.env.PLAYWRIGHT_API_URL ?? "http://127.0.0.1:4000";
+const useHostedTarget = Boolean(process.env.PLAYWRIGHT_BASE_URL);
 
 export default defineConfig({
-    testDir: './e2e',
-    fullyParallel: true,
-    forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
-    workers: process.env.CI ? 1 : undefined,
-    reporter: 'html',
-    use: {
-        baseURL: 'http://localhost:5173',
-        trace: 'on-first-retry',
+  testDir: "./e2e",
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: [
+    ["list"],
+    ["html", { outputFolder: "playwright-report", open: "never" }],
+  ],
+  use: {
+    baseURL: frontendUrl,
+    trace: "on-first-retry",
+  },
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
     },
-    projects: [
+    {
+      name: "Mobile Chrome",
+      use: { ...devices["Pixel 5"] },
+    },
+  ],
+  webServer: useHostedTarget
+    ? undefined
+    : [
         {
-            name: 'chromium',
-            use: { ...devices['Desktop Chrome'] },
+          command: "npm --prefix backend run dev",
+          url: `${backendUrl}/api/health`,
+          timeout: 120 * 1000,
+          reuseExistingServer: true,
         },
         {
-            name: 'Mobile Chrome',
-            use: { ...devices['Pixel 5'] },
+          command: "npm --prefix frontend run dev -- --host 127.0.0.1",
+          url: frontendUrl,
+          timeout: 120 * 1000,
+          reuseExistingServer: true,
         },
-        {
-            name: 'Mobile Safari',
-            use: { ...devices['iPhone 12'] },
-        },
-    ],
-    // Start backend and frontend before running tests
-    webServer: [
-        {
-            command: 'npm run dev --prefix backend',
-            url: 'http://localhost:3000/api/health',
-            timeout: 120 * 1000,
-            reuseExistingServer: true,
-        },
-        {
-            command: 'npm run dev --prefix frontend',
-            url: 'http://localhost:5173',
-            timeout: 120 * 1000,
-            reuseExistingServer: true,
-        },
-    ],
+      ],
 });

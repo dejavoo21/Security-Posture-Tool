@@ -5,6 +5,7 @@ import { Questionnaire } from "./pages/public/Questionnaire";
 import { Results } from "./pages/public/Results";
 import { Leaderboard } from "./pages/public/Leaderboard";
 import { Admin } from "./pages/admin/Admin";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 function App() {
   return (
@@ -14,7 +15,14 @@ function App() {
       <Route path="/assessment/:id" element={<Questionnaire />} />
       <Route path="/results/:id" element={<Results />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
-      <Route path="/admin" element={<Admin />} />
+      <Route
+        path="/admin"
+        element={(
+          <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+            <Admin />
+          </ProtectedRoute>
+        )}
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

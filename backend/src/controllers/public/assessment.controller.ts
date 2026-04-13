@@ -78,7 +78,21 @@ export const getAssessmentResults = (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Assessment not found' });
     }
 
-    res.status(200).json(assessment);
+    res.status(200).json({
+      id: assessment.id,
+      companyData: {
+        name: assessment.companyData.name,
+        industry: assessment.companyData.industry,
+        size: assessment.companyData.size,
+      },
+      overallScore: assessment.overallScore,
+      maturityLevel: assessment.maturityLevel,
+      riskLevel: assessment.riskLevel,
+      domainScores: assessment.domainScores,
+      frameworkScores: assessment.frameworkScores,
+      recommendations: assessment.recommendations.slice(0, 5),
+      date: assessment.date,
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving assessment results' });
   }

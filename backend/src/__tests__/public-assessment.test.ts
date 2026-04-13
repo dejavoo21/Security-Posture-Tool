@@ -1,74 +1,114 @@
-import { describe, it, expect, vi } from 'vitest';
-import request from 'supertest';
-import app from '../app.js';
+import { describe, expect, it } from "vitest";
+import request from "supertest";
+import jwt from "jsonwebtoken";
+import app from "../app.js";
 
-// Mock Prisma
-vi.mock('@prisma/client', () => {
-    return {
-        PrismaClient: vi.fn().mockImplementation(() => ({
-            assessmentSession: {
-                create: vi.fn().mockResolvedValue({ id: 'mock-session-id', companyName: 'Test Corp' }),
-                findUnique: vi.fn().mockResolvedValue({ id: 'mock-session-id', companyName: 'Test Corp', score: 85 }),
-            },
-            question: {
-                findMany: vi.fn().mockResolvedValue([
-                    { id: '1', text: 'Test Question', domain: 'Test Domain' }
-                ]),
-            },
-            $connect: vi.fn(),
-            $disconnect: vi.fn(),
-        })),
-    };
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
+
+const signToken = (role: string) => jwt.sign(
+  { id: "test-user-id", organizationId: "test-org-id", role },
+  JWT_SECRET,
+  { expiresIn: "1h" }
+);
+
+describe("public assessment API", () => {
+  it("starts a public assessment without account creation", async () => {
+    const response = await request(app)
+      .post("/api/public/assessments/start")
+      .send({
+        name: "Test Corp",
+        industry: "Technology",
+        size: "1-50",
+        contactName: "Test User",
+        email: "test@example.com"
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toHaveProperty("id");
+  });
+
+  it("returns questionnaire questions from the intended public assessment endpoint", async () => {
+    const response = await request(app).get("/api/public/assessments/questions");
+
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
+    expect(response.body[0]).toHaveProperty("id");
+    expect(response.body[0]).toHaveProperty("text");
+    expect(response.body[0]).toHaveProperty("domain");
+    expect(response.body[0]).toHaveProperty("options");
+  });
+
+  it("returns public summary results without workspace-only details", async () => {
+    const startResponse = await request(app)
+      .post("/api/public/assessments/start")
+      .send({
+        name: "Summary Corp",
+        industry: "Finance",
+        size: "51-200",
+        contactName: "Summary User",
+        email: "summary@example.com"
+      });
+
+    const questionsResponse = await request(app).get("/api/public/assessments/questions");
+    const responses = questionsResponse.body.map((question: any) => ({
+      questionId: question.id,
+      scoreValue: question.options[0].scoreValue
+    }));
+
+    await request(app)
+      .post(`/api/public/assessments/${startResponse.body.id}/submit`)
+      .send({ responses })
+      .expect(200);
+
+    const resultsResponse = await request(app)
+      .get(`/api/public/assessments/${startResponse.body.id}/results`);
+
+    expect(resultsResponse.status).toBe(200);
+    expect(resultsResponse.body).toHaveProperty("overallScore");
+    expect(resultsResponse.body).toHaveProperty("maturityLevel");
+    expect(resultsResponse.body).toHaveProperty("riskLevel");
+    expect(resultsResponse.body).toHaveProperty("recommendations");
+    expect(resultsResponse.body).not.toHaveProperty("responses");
+    expect(resultsResponse.body).not.toHaveProperty("controlReadiness");
+    expect(resultsResponse.body).not.toHaveProperty("gaps");
+    expect(JSON.stringify(resultsResponse.body).toLowerCase()).not.toContain("evidence");
+  });
+
+  it("returns 404 for invalid public result IDs", async () => {
+    const response = await request(app).get("/api/public/assessments/not-a-session/results");
+
+    expect(response.status).toBe(404);
+  });
 });
 
-describe('Public Assessment API', () => {
-    let publicSessionId: string;
+describe("backend route protection", () => {
+  it("blocks unauthenticated workspace routes", async () => {
+    await request(app).get("/api/workspace/notes").expect(401);
+    await request(app).get("/api/workspace/results/example").expect(401);
+    await request(app).get("/api/workspace/reports/example/pdf").expect(401);
+  });
 
-    it('POST /api/public/assessments/start should create a new session', async () => {
-        const response = await request(app)
-            .post('/api/public/assessments/start')
-            .send({
-                name: 'Test Corp',
-                industry: 'Technology',
-                email: 'test@example.com'
-            });
+  it("blocks unauthenticated admin routes", async () => {
+    await request(app).get("/api/admin/questions").expect(401);
+  });
 
-        expect(response.status).toBe(201);
-        expect(response.body).toHaveProperty('id');
-        publicSessionId = response.body.id;
-    });
+  it("blocks authenticated non-admin users from admin routes", async () => {
+    await request(app)
+      .get("/api/admin/questions")
+      .set("Authorization", `Bearer ${signToken("ORG_ADMIN")}`)
+      .expect(403);
+  });
 
-    it('GET /api/public/questions should return framework questions', async () => {
-        const response = await request(app).get('/api/public/questions');
+  it("allows SUPER_ADMIN users to access admin routes", async () => {
+    await request(app)
+      .get("/api/admin/questions")
+      .set("Authorization", `Bearer ${signToken("SUPER_ADMIN")}`)
+      .expect(200);
+  });
 
-        expect(response.status).toBe(200);
-        expect(Array.isArray(response.body)).toBe(true);
-        expect(response.body.length).toBeGreaterThan(0);
-        expect(response.body[0]).toHaveProperty('text');
-        expect(response.body[0]).toHaveProperty('domain');
-    });
-
-    it('GET /api/public/assessments/:id/results should show indicative results only', async () => {
-        // First create a completed session (mocking or using the start one)
-        const response = await request(app).get(`/api/public/assessments/${publicSessionId}/results`);
-
-        expect(response.status).toBe(200);
-        expect(response.body).toHaveProperty('overallScore');
-        expect(response.body).toHaveProperty('maturityLevel');
-
-        // Strict Product Rule: No evidence or deep notes in public results
-        expect(response.body).not.toHaveProperty('evidence');
-        expect(response.body).not.toHaveProperty('consultantNotes');
-    });
-
-    it('Protected Routes: GET /api/workspace/notes should return 401 for public users', async () => {
-        const response = await request(app).get('/api/workspace/notes');
-        // This assumes middleware is implemented. If not, this test will fail, indicating a security gap.
-        expect([401, 403]).toContain(response.status);
-    });
-
-    it('Admin Routes: GET /api/admin/questions should return 401/403 for public users', async () => {
-        const response = await request(app).get('/api/admin/questions');
-        expect([401, 403]).toContain(response.status);
-    });
+  it("keeps public routes accessible without authentication", async () => {
+    await request(app).get("/api/health").expect(200);
+    await request(app).get("/api/public/assessments/questions").expect(200);
+  });
 });
