@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import {
     convertPublicSessionToWorkspaceAssessment,
@@ -8,6 +9,36 @@ import {
     validatePublicSessionForConversion
 } from '../../services/publicConversion.service.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+
+const unexpectedAuthErrorResponse = (error: unknown) => {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+            return {
+                status: 409,
+                body: {
+                    error: 'An account with this email already exists. Please sign in instead.',
+                    code: 'EMAIL_EXISTS'
+                }
+            };
+        }
+
+        return {
+            status: 400,
+            body: {
+                error: 'We could not save the account details. Please check the form and try again.',
+                code: error.code
+            }
+        };
+    }
+
+    return {
+        status: 500,
+        body: {
+            error: 'We could not create your account right now. Please try again.',
+            code: 'UNEXPECTED_AUTH_ERROR'
+        }
+    };
+};
 
 const publicSessionErrorResponse = (status: string) => {
     if (status === 'not_found') {
@@ -139,9 +170,11 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         });
     } catch (error) {
         console.error('[auth.register] unexpected failure', {
-            message: error instanceof Error ? error.message : 'Unknown error'
+            message: error instanceof Error ? error.message : 'Unknown error',
+            code: error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined
         });
-        res.status(500).json({ error: 'We could not create your account right now. Please try again.' });
+        const response = unexpectedAuthErrorResponse(error);
+        res.status(response.status).json(response.body);
     }
 };
 export const login = async (req: Request, res: Response): Promise<any> => {
