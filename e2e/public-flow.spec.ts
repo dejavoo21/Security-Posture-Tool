@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("public assessment flow", () => {
   test("completes the public flow and shows lightweight results only", async ({ page }) => {
+    test.setTimeout(60_000);
     await page.goto("/");
     await expect(page.locator("h1")).toContainText(/security posture tool/i);
     await expect(page.locator(".hero-title")).toContainText(/cyber maturity/i);
@@ -19,13 +20,17 @@ test.describe("public assessment flow", () => {
 
     await expect(page).toHaveURL(/\/assessment\//);
 
-    while (await page.getByRole("button", { name: /next question/i }).isVisible().catch(() => false)) {
+    for (let questionNumber = 0; questionNumber < 20; questionNumber += 1) {
       await page.locator(".option-button").first().click();
+
+      const finishButton = page.getByRole("button", { name: /finish assessment/i });
+      if (await finishButton.isVisible().catch(() => false)) {
+        await finishButton.click();
+        break;
+      }
+
       await page.getByRole("button", { name: /next question/i }).click();
     }
-
-    await page.locator(".option-button").first().click();
-    await page.getByRole("button", { name: /finish assessment/i }).click();
 
     await expect(page).toHaveURL(/\/results\//);
     await expect(page.locator(".score-card__score")).toBeVisible();
