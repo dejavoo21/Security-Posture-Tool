@@ -4,7 +4,8 @@ import { expect, test } from "@playwright/test";
 test.describe("public assessment flow", () => {
   test("completes the public flow and shows lightweight results only", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("h1")).toContainText(/cyber maturity/i);
+    await expect(page.locator("h1")).toContainText(/security posture tool/i);
+    await expect(page.locator(".hero-title")).toContainText(/cyber maturity/i);
 
     await page.getByRole("button", { name: /start assessment/i }).click();
     await expect(page).toHaveURL(/\/start/);

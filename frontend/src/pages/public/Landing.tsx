@@ -28,7 +28,7 @@ export function LandingPage() {
           </div>
         </div>
 
-        <aside className="hero-panel">
+        <div className="hero-panel" aria-label="Sample result preview">
           <div>
             <p className="eyebrow" style={{ color: "#93c5fd", marginBottom: 8 }}>Sample result preview</p>
             <div className="hero-panel__score">78</div>
@@ -49,7 +49,7 @@ export function LandingPage() {
               </div>
             ))}
           </div>
-        </aside>
+        </div>
       </section>
 
       <section className="metrics-grid" aria-label="Key stats">
