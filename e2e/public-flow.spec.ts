@@ -37,7 +37,7 @@ test.describe("public assessment flow", () => {
     await expect(page.getByText(/E2E Test Corp/i)).toBeVisible();
     await expect(page.getByText("Maturity Level")).toBeVisible();
     await expect(page.getByText("Risk Level")).toBeVisible();
-    await expect(page.getByText(/top recommendations/i)).toBeVisible();
+    await expect(page.getByText(/strategic next actions/i)).toBeVisible();
 
     await expect(page.getByText(/detailed control readiness/i)).toHaveCount(0);
     await expect(page.getByText(/required evidence/i)).toHaveCount(0);
